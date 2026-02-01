@@ -457,6 +457,44 @@
         flex-direction: column;
       }
     }
+
+    /* Scroll to Top Button */
+    .scroll-to-top {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      width: 3.5rem;
+      height: 3.5rem;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(20px);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 99;
+      color: var(--text-main);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .scroll-to-top.visible {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .scroll-to-top:hover {
+      background: var(--primary);
+      border-color: var(--primary);
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+    }
   </style>
 </head>
 
@@ -506,6 +544,15 @@
     </div>
 
     <div class="customer-grid" id="customerGrid"></div>
+
+
+    <!-- Scroll to Top Button -->
+    <button class="scroll-to-top" id="scrollTopBtn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 15l-6-6-6 6" />
+      </svg>
+    </button>
   </div>
 
   <div class="modal-overlay" id="detailModal">
@@ -1036,6 +1083,16 @@
     // Close modal on click outside
     document.getElementById('detailModal').addEventListener('click', (e) => {
       if (e.target.id === 'detailModal') closeModal();
+    });
+
+    // Scroll to Top Visibility Logic
+    const scrollBtn = document.getElementById('scrollTopBtn');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 300) {
+        scrollBtn.classList.add('visible');
+      } else {
+        scrollBtn.classList.remove('visible');
+      }
     });
   </script>
 </body>
