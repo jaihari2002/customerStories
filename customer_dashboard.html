@@ -21,6 +21,13 @@
       --text-muted: #94a3b8;
     }
 
+    /* Reset box-sizing */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
     body {
       font-family: 'Outfit', sans-serif;
       background: var(--bg-dark);
@@ -67,6 +74,7 @@
       font-weight: 700;
       background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
       -webkit-background-clip: text;
+      background-clip: text;
       -webkit-text-fill-color: transparent;
       margin-bottom: 1rem;
       letter-spacing: -0.02em;
@@ -474,7 +482,8 @@
       <input type="file" id="fileInput" accept=".json">
     </div>
 
-    <div class="search-container" style="margin-bottom: 2rem; position: relative;">
+    <div class="search-container"
+      style="margin-bottom: 2rem; position: relative; max-width: 600px; margin-left: auto; margin-right: auto;">
       <input type="text" id="searchInput" placeholder="Search by name or phone number..."
         style="width: 100%; padding: 1rem 1rem 1rem 3rem; background: var(--card-bg); border: 1px solid var(--glass-border); border-radius: 1rem; color: white; font-size: 1.1rem; backdrop-filter: blur(12px); outline: none; transition: border-color 0.3s;">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
