@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Stories Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6366f1;
+      --accent: #8b5cf6;
+      --success: #10b981;
+      --success-glow: rgba(16, 185, 129, 0.4);
+      --bg-dark: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.1);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg-dark);
+      background-image:
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
+      background-attachment: fixed;
+      color: var(--text-main);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.1);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--glass-border);
+      border-radius: 4px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+      animation: fadeInDown 0.8s ease-out;
+    }
+
+    h1 {
+      font-size: 3rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 1rem;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* File Upload */
+    .upload-area {
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px dashed var(--glass-border);
+      border-radius: 1rem;
+      padding: 3rem;
+      text-align: center;
+      margin-bottom: 2rem;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+    }
+
+    .upload-area:hover,
+    .upload-area.dragover {
+      border-color: var(--primary);
+      background: rgba(99, 102, 241, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .btn-upload {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: white;
+      padding: 0.75rem 2rem;
+      border-radius: 2rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      margin-top: 1rem;
+      transition: transform 0.2s;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-upload:hover {
+      transform: scale(1.05);
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    /* Stats */
+    .stats-bar {
+      display: flex;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+      display: none;
+      /* Hidden until loaded */
+      animation: fadeInUp 0.5s ease-out;
+    }
+
+    .stat-card {
+      flex: 1;
+      background: var(--card-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      backdrop-filter: blur(12px);
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Grid Layout */
+    .customer-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.5rem;
+      display: none;
+      /* Hidden until loaded */
+    }
+
+    .customer-card {
+      background: var(--card-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      animation: fadeIn 0.5s ease-out backwards;
+    }
+
+    .customer-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .customer-card.buyer {
+      border: 1px solid var(--success);
+      box-shadow: 0 0 20px var(--success-glow);
+    }
+
+    .customer-card.buyer::before {
+      display: none;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .avatar {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #334155, #1e293b);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 1.2rem;
+      color: #94a3b8;
+    }
+
+    .buyer .avatar {
+      background: linear-gradient(135deg, var(--success), #059669);
+      color: white;
+    }
+
+    .customer-name {
+      font-weight: 600;
+      font-size: 1.1rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .customer-phone {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .card-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.75rem;
+      border-radius: 0.5rem;
+      font-size: 0.75rem;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-muted);
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(5px);
+      z-index: 100;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+    }
+
+    .modal-content {
+      background: #1e293b;
+      border: 1px solid var(--glass-border);
+      border-radius: 1.5rem;
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+      transform: scale(0.9);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-overlay.active .modal-content {
+      transform: scale(1);
+    }
+
+    .modal-header {
+      padding: 2rem 2rem 1rem;
+      border-bottom: 1px solid var(--glass-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+    }
+
+    .modal-body {
+      padding: 2rem;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1.5rem;
+      padding: 0.5rem;
+      transition: color 0.2s;
+    }
+
+    .close-btn:hover {
+      color: white;
+    }
+
+    .detail-row {
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* Timeline */
+    .timeline {
+      position: relative;
+      margin-top: 2rem;
+      padding-left: 2rem;
+      border-left: 2px solid var(--glass-border);
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 2rem;
+    }
+
+    .timeline-node {
+      position: absolute;
+      left: -2.6rem;
+      top: 0;
+      width: 1rem;
+      height: 1rem;
+      border-radius: 50%;
+      background: var(--bg-dark);
+      border: 2px solid var(--text-muted);
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .timeline-node.active,
+    .timeline-node:hover {
+      background: var(--primary);
+      border-color: var(--primary);
+      box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+    }
+
+    .timeline-node.verified-buyer {
+      background: var(--success);
+      border-color: var(--success);
+      box-shadow: 0 0 10px var(--success-glow);
+    }
+
+    .timeline-date {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+    }
+
+    .timeline-date:hover {
+      color: var(--text-main);
+    }
+
+    .timeline-content {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 0.75rem;
+      padding: 1rem;
+      border: 1px solid var(--glass-border);
+      display: none;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .timeline-content.open {
+      display: block;
+    }
+
+    .detail-label {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      margin-bottom: 0.25rem;
+    }
+
+    .detail-value {
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 1rem;
+      font-size: 0.8rem;
+      margin-right: 0.5rem;
+      margin-bottom: 0.5rem;
+      background: rgba(99, 102, 241, 0.2);
+      color: #c7d2fe;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 2rem;
+      }
+
+      .container {
+        padding: 1rem;
+      }
+
+      .stats-bar {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <header>
+      <h1>Vikki's Customer Stories</h1>
+      <p class="subtitle">Unified view of your customer relationships</p>
+    </header>
+
+    <div class="upload-area" id="dropZone" style="display:none;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+        style="color: var(--text-muted); margin-bottom: 1rem;">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="17 8 12 3 7 8"></polyline>
+        <line x1="12" y1="3" x2="12" y2="15"></line>
+      </svg>
+      <h3 style="margin: 0 0 0.5rem 0;">Upload Sales Data</h3>
+      <p style="color: var(--text-muted); margin: 0;">Drag & drop your JSON file here or click to browse</p>
+      <button class="btn-upload" onclick="document.getElementById('fileInput').click()">Select JSON File</button>
+      <input type="file" id="fileInput" accept=".json">
+    </div>
+
+    <div class="stats-bar" id="statsBar">
+      <div class="stat-card">
+        <div class="stat-value" id="totalCustomers">0</div>
+        <div class="stat-label">Total Customers</div>
+      </div>
+      <div class="stat-card" style="border-color: var(--success-glow);">
+        <div class="stat-value" id="totalBuyers" style="color: var(--success);">0</div>
+        <div class="stat-label">Verified Buyers</div>
+      </div>
+    </div>
+
+    <div class="customer-grid" id="customerGrid"></div>
+  </div>
+
+  <div class="modal-overlay" id="detailModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h2 id="modalName" style="margin: 0; font-size: 1.5rem;">Customer Name</h2>
+          <div id="modalPhone" style="color: var(--text-muted); margin-top: 0.25rem;">+91...</div>
+        </div>
+        <button class="close-btn" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-body" id="modalBody">
+        <!-- Details injected here -->
+      </div>
+    </div>
+  </div>
+
+  <script src="customer_data.js"></script>
+  <script>
+    // Configuration for column mapping
+
+
+    window.addEventListener('DOMContentLoaded', () => {
+      processData(PRELOADED_DATA);
+      const dropZone = document.getElementById('dropZone');
+      if (dropZone) dropZone.style.display = 'none';
+
+      const statsBar = document.getElementById('statsBar');
+      if (statsBar) statsBar.style.display = 'flex';
+
+      const grid = document.getElementById('customerGrid');
+      if (grid) grid.style.display = 'grid';
+    });
+
+    const COL_MAPPING = {
+      phone: ['Contact Number', 'CONTACT NO', 'Contact  Number', 'MOBILE', 'ContactNumber'],
+      name: ['Customer Name', 'NAME', 'Name', 'Customer Name', 'Customer'],
+      invoice: ['Invoice Number', 'INVOICE NUMBER', "INVOICE NUMBER'", 'GST No', 'GST NO'], // GST sometimes treated as unique ID if invoice missing? adhering to prompt strictness
+      orderValue: ['Order Value', 'ORDER VALUE', 'OrderValue'],
+      action: ['Action Type', 'ACTION 1', 'ACTION 2', 'ACTION 3', 'Action'],
+      product: ['Product Requested', 'PRODUCT', 'Product'],
+      location: ['Place', 'LOCATION', 'Location']
+    };
+
+    // "Deal Closed" fuzzy match terms
+    const CLOSED_TERMS = ['deal closed', 'deal clsose', 'closed deal', 'order confirmed', 'today dispatch', 'tmw dispatch', 'dispatched'];
+
+    let customers = new Map();
+
+    const fileInput = document.getElementById('fileInput');
+    const dropZone = document.getElementById('dropZone');
+
+    // Drag & Drop
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length) handleFile(e.target.files[0]);
+    });
+
+    function handleFile(file) {
+      if (file.type !== 'application/json' && !file.name.endsWith('.json')) {
+        alert('Please upload a JSON file.');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          processData(data);
+          dropZone.style.display = 'none';
+          document.getElementById('statsBar').style.display = 'flex';
+          document.getElementById('customerGrid').style.display = 'grid';
+        } catch (err) {
+          alert('Error parsing JSON: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function normalizePhone(raw) {
+      if (!raw) return null;
+      let str = String(raw).trim();
+      // Remove spaces, dashes, special chars
+      str = str.replace(/[\s\-\(\)\.]/g, '');
+      // Remove +91 or 91 prefix if length > 10
+      if (str.length > 10 && (str.startsWith('91') || str.startsWith('+91'))) {
+        str = str.replace(/^\+?91/, '');
+      }
+      // Basic validation: needs to be at least some digits
+      if (str.length < 5 || isNaN(str)) return null;
+      return str;
+    }
+
+    function isDealClosed(action) {
+      if (!action) return false;
+      const norm = String(action).toLowerCase().trim();
+      return CLOSED_TERMS.some(term => norm.includes(term));
+    }
+
+    function getKey(obj, possibleKeys) {
+      if (!obj) return null;
+      for (const key of possibleKeys) {
+        if (obj[key] !== undefined && obj[key] !== null) return obj[key];
+        // Case insensitive check
+        const found = Object.keys(obj).find(k => k.toLowerCase() === key.toLowerCase());
+        if (found) return obj[found];
+      }
+      return null;
+    }
+
+    function processData(rawData) {
+      customers.clear();
+
+      // Iterate over all datasets
+      Object.keys(rawData).forEach(datasetName => {
+        const dataset = rawData[datasetName];
+        // Handle { columns: [], data: [] } structure
+        let records = [];
+        if (dataset.data && Array.isArray(dataset.data)) {
+          records = dataset.data;
+        } else if (Array.isArray(dataset)) {
+          records = dataset;
+        }
+
+        records.forEach(record => {
+          const rawPhone = getKey(record, COL_MAPPING.phone);
+          const phone = normalizePhone(rawPhone);
+
+          if (!phone) return;
+
+          if (!customers.has(phone)) {
+            customers.set(phone, {
+              phone: phone,
+              rawPhone: rawPhone,
+              name: getKey(record, COL_MAPPING.name) || 'Unknown',
+              interactions: [],
+              isBuyer: false,
+              totalOrderValue: 0
+            });
+          }
+
+          const customer = customers.get(phone);
+
+          // Update basic info if missing
+          if (customer.name === 'Unknown' || customer.name === null) {
+            const newName = getKey(record, COL_MAPPING.name);
+            if (newName) customer.name = newName;
+          }
+
+          // Gather details
+          const invoice = getKey(record, COL_MAPPING.invoice);
+          const orderValue = getKey(record, COL_MAPPING.orderValue);
+          const action = getKey(record, COL_MAPPING.action);
+          const product = getKey(record, COL_MAPPING.product);
+
+          // Determine if this specific interaction qualifies as a "Buy"
+          // New Rule: "dispatch word in any variety if there then means they are verified customers"
+
+          let isBuyInteraction = false;
+
+          // Check for dispatch variations
+          const dispatchTerms = ['dispatch', 'dispach', 'dispcatch', 'despatch', 'disptach'];
+          const normAction = action ? String(action).toLowerCase() : '';
+          const hasDispatch = dispatchTerms.some(t => normAction.includes(t));
+
+          if (hasDispatch) {
+            isBuyInteraction = true;
+            customer.isBuyer = true;
+          } else if (invoice && orderValue && isDealClosed(action)) {
+            // Keep previous logic as fallback just in case, or remove if user implies ONLY dispatch?
+            // "dispatch word ... if there then means" usually implies "if X then Y", not "Only if X then Y".
+            // So I will keep the strict Invoice+OrderValue check as a valid path too (e.g. "deal closed" with invoice).
+            isBuyInteraction = true;
+            customer.isBuyer = true;
+          }
+
+          // Also check if they just satisfied the criteria globally across interactions? 
+          // The prompt implies a specific record qualifies them. 
+          // Consolidate order value if numeric
+          if (orderValue) {
+            const val = parseFloat(String(orderValue).replace(/[^\d.-]/g, ''));
+            if (!isNaN(val)) customer.totalOrderValue += val;
+          }
+
+          customer.interactions.push({
+            dataset: datasetName,
+            date: record.Date || record.DATE,
+            product: product,
+            action: action,
+            invoice: invoice,
+            value: orderValue,
+            details: record // Keep full record for details view
+          });
+        });
+      });
+
+      renderGrid();
+    }
+
+    function renderGrid() {
+      const grid = document.getElementById('customerGrid');
+      grid.innerHTML = '';
+
+      let buyerCount = 0;
+      const sortedCustomers = Array.from(customers.values()).sort((a, b) => {
+        // Buyers first
+        if (a.isBuyer && !b.isBuyer) return -1;
+        if (!a.isBuyer && b.isBuyer) return 1;
+        return 0;
+      });
+
+      sortedCustomers.forEach(c => {
+        if (c.isBuyer) buyerCount++;
+
+        const card = document.createElement('div');
+        card.className = `customer-card ${c.isBuyer ? 'buyer' : ''}`;
+
+        // Avatar letter
+        const safeName = String(c.name || '#').trim();
+        const initial = safeName.length > 0 ? safeName.charAt(0).toUpperCase() : '#';
+
+        // Recent action
+        const lastInteraction = c.interactions[c.interactions.length - 1];
+        const recentAction = lastInteraction.action || 'No action recorded';
+        const recentProduct = lastInteraction.product ? lastInteraction.product.slice(0, 30) + (lastInteraction.product.length > 30 ? '...' : '') : 'N/A';
+
+        card.innerHTML = `
+                <div class="card-header">
+                    <div class="avatar">${initial}</div>
+                    <div style="flex:1; overflow:hidden;">
+                        <div class="customer-name" title="${c.name}">${c.name}</div>
+                        <div class="customer-phone">${c.rawPhone || c.phone}</div>
+                    </div>
+                     <a href="tel:${c.phone}" class="call-btn" onclick="event.stopPropagation()" style="background: rgba(255, 255, 255, 0.1); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: var(--success); transition: background 0.2s;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.05 12.05 0 0 0 .57 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.03 12.03 0 0 0 2.81.57A2 2 0 0 1 22 16.92z"></path>
+                        </svg>
+                    </a>
+                </div>
+                <div style="font-size: 0.9rem; margin-top: 0.5rem; color: var(--text-muted);">
+                    <div style="margin-bottom: 0.25rem;">Last: <span style="color: var(--text-main)">${recentAction}</span></div>
+                    <div>Interested in: <span style="color: var(--text-main)">${recentProduct}</span></div>
+                </div>
+                ${c.isBuyer ?
+            `<div style="margin-top:auto; padding-top:1rem; text-align:right;">
+                        <span class="tag" style="background:rgba(16, 185, 129, 0.2); color:#6ee7b7; border-color:rgba(16, 185, 129, 0.3);">verified buyer</span>
+                     </div>` : ''}
+            `;
+
+        card.querySelector('.call-btn').addEventListener('mouseenter', (e) => {
+          e.target.style.background = 'rgba(16, 185, 129, 0.2)';
+        });
+        card.querySelector('.call-btn').addEventListener('mouseleave', (e) => {
+          e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+        });
+
+
+        card.onclick = () => showDetails(c);
+
+        // Animation stagger
+        card.style.animationDelay = `${Math.min(sortedCustomers.indexOf(c) * 0.05, 1)}s`;
+
+        grid.appendChild(card);
+      });
+
+      // Update stats
+      document.getElementById('totalCustomers').textContent = customers.size;
+      document.getElementById('totalBuyers').textContent = buyerCount;
+      // document.getElementById('conversionRate').textContent = customers.size ? Math.round((buyerCount / customers.size) * 100) + '%' : '0%';
+    }
+
+    function parseDate(dateStr) {
+      if (!dateStr) return new Date(0); // Oldest possible if missing
+
+      // Handle "2024-09-11 00:00:00" format directly parsable by Date in many cases, but safe to standardize
+      let normalized = String(dateStr).trim();
+
+      // Handle dot separated: 21.08.2024
+      if (normalized.match(/^\d{1,2}\.\d{1,2}\.\d{4}/)) {
+        const parts = normalized.split(' ')[0].split('.');
+        // parts[0] = day, parts[1] = month, parts[2] = year
+        return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+      }
+
+      // Try standard parse
+      const d = new Date(normalized);
+      return isNaN(d.getTime()) ? new Date(0) : d;
+    }
+
+    function formatDate(dateObj) {
+      if (!dateObj || dateObj.getTime() === 0) return 'Unknown Date';
+      const options = { day: 'numeric', month: 'short', year: 'numeric' };
+      // "21 Aug 2024"
+      return dateObj.toLocaleDateString('en-GB', options).replace(/ /g, ' ');
+    }
+
+    // Extended check for verified buyer logic on specific interaction
+    function isVerifiedInteraction(intr) {
+      // "verified buyer if they have dispatch word in action even with spelling mistakes"
+      if (!intr.action) return false;
+
+      const action = intr.action.toLowerCase();
+      // Including typical typos for dispatch
+      const terms = ['dispatch', 'dispach', 'dispcatch', 'despatch', 'disptach'];
+      return terms.some(t => action.includes(t)) || CLOSED_TERMS.some(t => action.includes(t) && t.includes('dispatch'));
+    }
+
+    function showDetails(customer) {
+      document.getElementById('modalName').textContent = customer.name;
+      document.getElementById('modalPhone').textContent = customer.rawPhone || customer.phone;
+
+      const body = document.getElementById('modalBody');
+      body.innerHTML = '';
+
+      if (customer.isBuyer) {
+        const badge = document.createElement('div');
+        badge.className = 'tag';
+        badge.style.background = 'var(--success)';
+        badge.style.color = 'white';
+        badge.style.marginBottom = '1.5rem';
+        badge.style.fontSize = '1.1rem';
+        badge.style.padding = '0.5rem 1rem';
+        badge.textContent = 'Verified Buyer';
+        body.appendChild(badge);
+      }
+
+      const timeline = document.createElement('div');
+      timeline.className = 'timeline';
+
+      // Sort interactions by date ascending
+      const sortedInteractions = [...customer.interactions].sort((a, b) => {
+        return parseDate(a.date) - parseDate(b.date);
+      });
+
+      sortedInteractions.forEach((intr, idx) => {
+        const dateObj = parseDate(intr.date);
+        const dateStr = formatDate(dateObj);
+        const isVerifiedEvent = isVerifiedInteraction(intr);
+        const uniqueId = `timeline-${idx}`;
+
+        const item = document.createElement('div');
+        item.className = 'timeline-item';
+
+        item.innerHTML = `
+            <div class="timeline-node ${isVerifiedEvent ? 'verified-buyer' : ''}" onclick="toggleTimeline('${uniqueId}')" title="${isVerifiedEvent ? 'Verified Buyer Event' : 'Click to view details'}"></div>
+            <div class="timeline-date" onclick="toggleTimeline('${uniqueId}')">${dateStr} ${isVerifiedEvent ? '<span style="color:var(--success); font-size:0.8rem; margin-left:0.5rem;">★</span>' : ''}</div>
+            <div class="timeline-content" id="${uniqueId}">
+                ${renderDetailsContent(intr)}
+            </div>
+        `;
+
+        timeline.appendChild(item);
+      });
+
+      body.appendChild(timeline);
+
+      const overlay = document.getElementById('detailModal');
+      overlay.style.display = 'flex';
+      // Trigger reflow
+      overlay.offsetHeight;
+      overlay.classList.add('active');
+    }
+
+    function toggleTimeline(id) {
+      const content = document.getElementById(id);
+      const node = content.parentElement.querySelector('.timeline-node');
+
+      if (content.classList.contains('open')) {
+        content.classList.remove('open');
+        if (!node.classList.contains('verified-buyer')) node.classList.remove('active');
+      } else {
+        // Close others? Optional. Let's keep multiple open allowed for comparison.
+        content.classList.add('open');
+        if (!node.classList.contains('verified-buyer')) node.classList.add('active');
+      }
+    }
+
+    function renderDetailsContent(intr) {
+      let content = '';
+      const details = intr.details;
+
+      if (intr.dataset) content += `<div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem;">Source: ${intr.dataset}</div>`;
+
+      if (intr.action) content += `<div class="detail-row"><div class="detail-label">Action</div><div class="detail-value">${intr.action}</div></div>`;
+      if (intr.product) content += `<div class="detail-row"><div class="detail-label">Product</div><div class="detail-value">${intr.product}</div></div>`;
+
+      if (intr.invoice) content += `<div class="detail-row"><div class="detail-label">Invoice</div><div class="detail-value" style="font-family:monospace; color:#818cf8;">${intr.invoice}</div></div>`;
+      if (intr.value) content += `<div class="detail-row"><div class="detail-label">Order Value</div><div class="detail-value" style="color:var(--success); font-weight:bold;">${intr.value}</div></div>`;
+
+      Object.keys(details).forEach(k => {
+        const v = details[k];
+        const isMapped = Object.values(COL_MAPPING).flat().includes(k) || k === 'Date' || k === 'DATE';
+        if (!isMapped && v !== null && v !== 'null' && v !== '') {
+          content += `<div class="detail-row" style="border-bottom:none; padding-bottom:0.25rem;"><div class="detail-label" style="text-transform:none;">${k}</div><div class="detail-value" style="font-size:0.9rem; color:#cbd5e1;">${v}</div></div>`;
+        }
+      });
+      return content;
+    }
+
+    function closeModal() {
+      const overlay = document.getElementById('detailModal');
+      overlay.classList.remove('active');
+      setTimeout(() => {
+        overlay.style.display = 'none';
+      }, 300);
+    }
+
+    // Close modal on click outside
+    document.getElementById('detailModal').addEventListener('click', (e) => {
+      if (e.target.id === 'detailModal') closeModal();
+    });
+  </script>
+</body>
+
+</html>
