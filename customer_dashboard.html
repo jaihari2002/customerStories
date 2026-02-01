@@ -799,15 +799,30 @@
             if (!isNaN(val)) customer.totalOrderValue += val;
           }
 
-          customer.interactions.push({
-            dataset: datasetName,
-            date: record.Date || record.DATE,
-            product: product,
-            action: action,
-            invoice: invoice,
-            value: orderValue,
-            details: record // Keep full record for details view
+
+
+          // Deduplicate: Check if this interaction matches an existing one
+          const isDuplicate = customer.interactions.some(existing => {
+            return (
+              existing.date === (record.Date || record.DATE) &&
+              existing.action === action &&
+              existing.product === product &&
+              existing.invoice === invoice &&
+              existing.value === orderValue
+            );
           });
+
+          if (!isDuplicate) {
+            customer.interactions.push({
+              dataset: datasetName,
+              date: record.Date || record.DATE,
+              product: product,
+              action: action,
+              invoice: invoice,
+              value: orderValue,
+              details: record // Keep full record for details view
+            });
+          }
         });
       });
 
