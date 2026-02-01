@@ -474,6 +474,17 @@
       <input type="file" id="fileInput" accept=".json">
     </div>
 
+    <div class="search-container" style="margin-bottom: 2rem; position: relative;">
+      <input type="text" id="searchInput" placeholder="Search by name or phone number..."
+        style="width: 100%; padding: 1rem 1rem 1rem 3rem; background: var(--card-bg); border: 1px solid var(--glass-border); border-radius: 1rem; color: white; font-size: 1.1rem; backdrop-filter: blur(12px); outline: none; transition: border-color 0.3s;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+        style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted);">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+    </div>
+
     <div class="stats-bar" id="statsBar">
       <div class="stat-card">
         <div class="stat-value" id="totalCustomers">0</div>
@@ -508,17 +519,7 @@
     // Configuration for column mapping
 
 
-    window.addEventListener('DOMContentLoaded', () => {
-      processData(PRELOADED_DATA);
-      const dropZone = document.getElementById('dropZone');
-      if (dropZone) dropZone.style.display = 'none';
 
-      const statsBar = document.getElementById('statsBar');
-      if (statsBar) statsBar.style.display = 'flex';
-
-      const grid = document.getElementById('customerGrid');
-      if (grid) grid.style.display = 'grid';
-    });
 
     const COL_MAPPING = {
       phone: ['Contact Number', 'CONTACT NO', 'Contact  Number', 'MOBILE', 'ContactNumber'],
@@ -586,10 +587,87 @@
       return str;
     }
 
-    function isDealClosed(action) {
+    // Levenshtein distance for fuzzy search
+    function levenshteinDistance(a, b) {
+      if (a.length === 0) return b.length;
+      if (b.length === 0) return a.length;
+
+      const matrix = [];
+      for (let i = 0; i <= b.length; i++) { matrix[i] = [i]; }
+      for (let j = 0; j <= a.length; j++) { matrix[0][j] = j; }
+
+      for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+          if (b.charAt(i - 1) === a.charAt(j - 1)) {
+            matrix[i][j] = matrix[i - 1][j - 1];
+          } else {
+            matrix[i][j] = Math.min(
+              matrix[i - 1][j - 1] + 1, // substitution
+              Math.min(
+                matrix[i][j - 1] + 1,   // insertion
+                matrix[i - 1][j] + 1    // deletion
+              )
+            );
+          }
+        }
+      }
+      return matrix[b.length][a.length];
+    }
+
+    function isDealClosed(action, orderValue) {
+      // Rule 2: Valid order value number more than 0
+      if (orderValue) {
+        // specific check for number validity
+        const valStr = String(orderValue).replace(/[^\d.-]/g, '');
+        if (valStr && !isNaN(parseFloat(valStr))) {
+          if (parseFloat(valStr) > 0) return true;
+        }
+      }
+
       if (!action) return false;
       const norm = String(action).toLowerCase().trim();
-      return CLOSED_TERMS.some(term => norm.includes(term));
+
+      // Rule 1: "deal closed" or "won" in any variety... except "deal not closed"
+      if (norm.includes('deal not closed')) return false;
+
+      // Fuzzy / Variation checks
+      // Simple includes for known positive terms
+      const positiveTerms = [
+        'deal closed', 'deal close', 'closed deal',
+        'won', 'winning', 'winner',
+        'order confirmed', 'dispatched'
+      ];
+      // Note: "dispatch" check logic was separate before but user says "if inside ant node ... have deal closed or won ... those node must be green" 
+      // User also mentioned "even if one node is green then make that customer verified".
+      // Previous logic had "dispatch" = verified. 
+      // The prompt says "content action have 'deal closed' or 'won'... those node must be in green... and even if one node is green then make that customer as verified". 
+      // So I should include strictly what they asked for in "deal closed" logic. 
+      // "won" in any variety even spelling mistake.
+
+      let isMatch = false;
+
+      // Direct match or partial match
+      if (positiveTerms.some(t => norm.includes(t))) isMatch = true;
+
+      // Spelling mistake check (Levenshtein on words)
+      // We check if any word in 'action' is close to 'won' or 'closed'
+      if (!isMatch) {
+        const words = norm.split(/\s+/);
+        const targetWords = ['won', 'closed', 'deal'];
+
+        for (const word of words) {
+          if (word.length < 3) continue; // skip short junk
+          for (const target of targetWords) {
+            if (levenshteinDistance(word, target) <= 1) { // Very close match
+              isMatch = true;
+              break;
+            }
+          }
+          if (isMatch) break;
+        }
+      }
+
+      return isMatch;
     }
 
     function getKey(obj, possibleKeys) {
@@ -649,22 +727,10 @@
           const product = getKey(record, COL_MAPPING.product);
 
           // Determine if this specific interaction qualifies as a "Buy"
-          // New Rule: "dispatch word in any variety if there then means they are verified customers"
+          // New Rule: "deal closed" or strict verification criteria
+          const isVerified = isDealClosed(action, orderValue);
 
-          let isBuyInteraction = false;
-
-          // Check for dispatch variations
-          const dispatchTerms = ['dispatch', 'dispach', 'dispcatch', 'despatch', 'disptach'];
-          const normAction = action ? String(action).toLowerCase() : '';
-          const hasDispatch = dispatchTerms.some(t => normAction.includes(t));
-
-          if (hasDispatch) {
-            isBuyInteraction = true;
-            customer.isBuyer = true;
-          } else if (invoice && orderValue && isDealClosed(action)) {
-            // Keep previous logic as fallback just in case, or remove if user implies ONLY dispatch?
-            // "dispatch word ... if there then means" usually implies "if X then Y", not "Only if X then Y".
-            // So I will keep the strict Invoice+OrderValue check as a valid path too (e.g. "deal closed" with invoice).
+          if (isVerified) {
             isBuyInteraction = true;
             customer.isBuyer = true;
           }
@@ -690,14 +756,78 @@
       });
 
       renderGrid();
+
+      renderGrid();
     }
 
-    function renderGrid() {
+    // Initialize
+    window.addEventListener('DOMContentLoaded', () => {
+      if (typeof PRELOADED_DATA !== 'undefined') {
+        processData(PRELOADED_DATA);
+      }
+
+      const dropZone = document.getElementById('dropZone');
+      if (dropZone) dropZone.style.display = 'none';
+
+      const statsBar = document.getElementById('statsBar');
+      if (statsBar) statsBar.style.display = 'flex';
+
+      const grid = document.getElementById('customerGrid');
+      if (grid) grid.style.display = 'grid';
+
+      // Setup Search Event Listener (Once)
+      const searchInput = document.getElementById('searchInput');
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          const query = e.target.value;
+          filterAndRender(query);
+        });
+      }
+    });
+
+    function filterAndRender(query) {
+      if (!query) {
+        renderGrid(Array.from(customers.values()));
+        return;
+      }
+
+      const q = query.toLowerCase();
+      const filtered = Array.from(customers.values()).filter(c => {
+        // Fuzzy match name or phone
+        const nameMatch = c.name ? fuzzyMatch(c.name, q) : false;
+        const phoneMatch = c.phone ? c.phone.includes(q) : false; // Phone usually exact or contains
+        return nameMatch || phoneMatch;
+      });
+
+      renderGrid(filtered);
+    }
+
+    // Helper for fuzzy match (Reordered words allowed, but strict spelling)
+    function fuzzyMatch(text, query) {
+      if (!text) return false;
+      text = String(text).toLowerCase();
+
+      // Split query into words/tokens
+      const qWords = query.toLowerCase().trim().split(/\s+/).filter(w => w.length > 0);
+
+      if (qWords.length === 0) return true; // Empty query matches all? Or handled by caller.
+
+      // Check if ALL query words are present in the text (substring match)
+      // This allows "Singh Vikram" to find "Vikram Singh"
+      // This allows "Vik" to find "Vikram"
+      // This DOES NOT allow "Vikrm" (typo) to find "Vikram"
+      return qWords.every(qw => text.includes(qw));
+    }
+
+    function renderGrid(customerList) {
       const grid = document.getElementById('customerGrid');
       grid.innerHTML = '';
 
+      // Use passed list or all customers
+      let list = customerList || Array.from(customers.values());
+
       let buyerCount = 0;
-      const sortedCustomers = Array.from(customers.values()).sort((a, b) => {
+      const sortedCustomers = list.sort((a, b) => {
         // Buyers first
         if (a.isBuyer && !b.isBuyer) return -1;
         if (!a.isBuyer && b.isBuyer) return 1;
@@ -791,13 +921,7 @@
 
     // Extended check for verified buyer logic on specific interaction
     function isVerifiedInteraction(intr) {
-      // "verified buyer if they have dispatch word in action even with spelling mistakes"
-      if (!intr.action) return false;
-
-      const action = intr.action.toLowerCase();
-      // Including typical typos for dispatch
-      const terms = ['dispatch', 'dispach', 'dispcatch', 'despatch', 'disptach'];
-      return terms.some(t => action.includes(t)) || CLOSED_TERMS.some(t => action.includes(t) && t.includes('dispatch'));
+      return isDealClosed(intr.action, intr.value);
     }
 
     function showDetails(customer) {
